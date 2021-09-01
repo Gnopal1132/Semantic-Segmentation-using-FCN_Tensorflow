@@ -44,7 +44,8 @@ Callbacks:
     Model_Checkpoint_last:
         enabled: True
         Out_file: 'E:\Study Material\Python_Machine_AI\Deep Learning_Lessons\Praktisch\Tensorflow\Projects\Semantic Segmentation FCN\Generated\last_weight.h5'
-        
+        monitor: 'val_loss'
+
     Tensorboard:
         enabled: True
         event_file: 'E:\Study Material\Python_Machine_AI\Deep Learning_Lessons\Praktisch\Tensorflow\Projects\Semantic Segmentation FCN\TensorBoard\'
