@@ -1,61 +1,57 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[3]:
-
-
-import sys,os
-sys.path.append(os.path.abspath(r"E:\Study Material\Python_Machine_AI\Deep Learning_Lessons\Praktisch\Tensorflow\Projects\Semantic Segmentation FCN"))
-# In[4]:
-
-
 import tensorflow as tf
-from Model import Encoder,Decoder
+from Model import Encoder, Decoder
 
 
-# In[5]:
+class FcnModel:
+    def __init__(self, config, save_model=False, show_summary=False):
+        self.x_size = config["Image"]["Size_x"]
+        self.y_size = config["Image"]["Size_y"]
+        self.channels = config["Image"]["Size_channel"]
+        self.classes = config["Network"]["num_classes"]
+        self.use_pretrained_weights = config["train"]["weight_initialization"]["use_pretrained"]
+        self.train_scratch = config["Network"]["train_from_scratch"]
+        self.graph_path = config["Network"]["graph_path"]
+        self.decode = config["Network"]["Decoder"]
+        self.save_model = save_model
+        self.show_summary = show_summary
+        self.model_img = config["Network"]["modelpath"]
 
+    def model(self):
 
-def FCN_Model(config):
-    X_size = config["Image"]["Size_x"]
-    Y_size = config["Image"]["Size_y"]
-    Num_channels = config["Image"]["Size_channel"]
-    Num_classes = config["Network"]["num_classes"]
-    Use_Pretrained_Weights = config["train"]["weight_initialization"]["use_pretrained"]
-    Train_Scratch = config["Network"]["train_from_scratch"]
-    Graph_path = config["Network"]["graph_path"]
-    Decode = config["Network"]["Decoder"]
-    
-    if Use_Pretrained_Weights:
-        json_file = open(Graph_path,"r")
-        model_json = json_file.read()
-        json_file.close()
-        model = tf.keras.models.model_from_json(model_json)
-    else:
-        if Train_Scratch:
-            input_,pool_3,pool_4,Encoder_Out = Encoder.Random_Initialized_Net(X_size,Y_size,Num_channels=Num_channels,Num_classes=Num_classes)
+        if self.use_pretrained_weights:
+            json_file = open(self.graph_path, "r")
+            model_json = json_file.read()
+            json_file.close()
+            model = tf.keras.models.model_from_json(model_json)
+            return model
         else:
-            input_,pool_3,pool_4,Encoder_Out = Encoder.Model_With_VGG_Weights(X_size,Y_size,Num_channels=Num_channels,Num_classes=Num_classes)
-    
-    if Decode == "8X":
-        decoder_out = Decoder.Decoder_8x(Encoder_out=Encoder_Out,pool3=pool_3,pool4=pool_4,num_class=Num_classes)
-    elif Decode == "16X":
-        decoder_out = Decoder.Decoder_16x(Encoder_out=Encoder_Out,pool3=pool_3,pool4=pool_4,num_class=Num_classes)
-    elif Decode == "32X":
-        decoder_out = Decoder.Decoder_32x(Encoder_out=Encoder_Out,pool3=pool_3,pool4=pool_4,num_class=Num_classes)
-        
-    else:
-        raise Exception("Unknown Decoder")
-        
-    model = tf.keras.Model(inputs = input_,outputs = decoder_out)
-    
-    print(model.summary())
-    return model
-        
+            if self.train_scratch:
+                input_, pool_3, pool_4, encoder_out = Encoder.random_initialized_net(self.x_size, self.y_size,
+                                                                                     num_channels=self.channels,
+                                                                                     num_classes=self.classes)
+            else:
+                input_, pool_3, pool_4, encoder_out = Encoder.model_with_vgg_weights(self.x_size, self.y_size,
+                                                                                     num_channels=self.channels,
+                                                                                     num_classes=self.classes)
 
+            if self.decode == "8X":
+                decoder_out = Decoder.decoder_8x(encoder_out=encoder_out, pool3=pool_3, pool4=pool_4,
+                                                 num_class=self.classes)
+            elif self.decode == "16X":
+                decoder_out = Decoder.decoder_16x(encoder_out=encoder_out, pool4=pool_4, num_class=self.classes)
+            elif self.decode == "32X":
+                decoder_out = Decoder.decoder_32x(encoder_out=encoder_out, num_class=self.classes)
 
-# In[ ]:
+            else:
+                raise Exception("Unknown Decoder")
 
+            model = tf.keras.Model(inputs=input_, outputs=decoder_out)
 
+            if self.save_model:
+                tf.keras.utils.plot_model(model, show_dtype=True, show_layer_names=True, show_shapes=True,
+                                          to_file=self.model_img)
 
+            if self.show_summary:
+                print(model.summary())
 
+            return model

@@ -1,111 +1,57 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
 import numpy as np
-from PIL import Image,ImageStat
-import os
-from albumentations import ChannelShuffle,Blur,RGBShift,RandomBrightness
+from PIL import Image, ImageStat
+from albumentations import ChannelShuffle, Blur, RGBShift, RandomBrightness
 
 
-# In[6]:
-
-
-def Read_Image(Instance,size_x,size_y):
-    image = Image.open(Instance[0])
-    image = image.resize((size_x,size_y),Image.ANTIALIAS)
+def read_image(instance, size_x, size_y):
+    image = Image.open(instance[0])
+    image = image.resize((size_x, size_y), Image.ANTIALIAS)
     image = image.convert('RGB')
     return np.array(image)
 
 
-# In[3]:
-
-
-def Read_mask(Instance,size_x,size_y):
-    mask = Image.open(Instance[1])
-    mask = mask.resize((size_x,size_y),Image.ANTIALIAS)
-    mask = np.array(mask,dtype = np.float32)
+def read_mask(instance, size_x, size_y):
+    mask = Image.open(instance[1])
+    mask = mask.resize((size_x, size_y), Image.ANTIALIAS)
+    mask = np.array(mask, dtype=np.float32)
     mask[mask == 255.] = 0.
     return mask
 
 
-# In[4]:
+def one_hot_encoder(mask, size_x, size_y, num_classes):
+    one_hot_mask = np.zeros((size_x, size_y, num_classes))
+    for i in range(size_x):
+        for j in range(size_y):
+            pix_val = mask[i, j]
+            one_hot_mask[i, j, int(pix_val)] = 1
+    return one_hot_mask
 
 
-def One_Hot_Encoder(mask,Size_x,Size_y,num_classes):
-    One_hot_mask = np.zeros((Size_x,Size_y,num_classes))
-    for i in range(Size_x):
-        for j in range(Size_y):
-            pix_val = mask[i,j]
-            One_hot_mask[i,j,int(pix_val)] = 1
-    return One_hot_mask
-
-
-# In[3]:
-
-
-def Augment_me(image,mask):
-    X = image
-    Y = mask
+def augment_me(image, mask):
+    x = image
+    y = mask
     
     # Executing with Default Parameters
-    Aug = ChannelShuffle(p = 0.5)
-    Augmented = Aug(image = X,mask = Y)
-    X = Augmented["image"]
-    Y = Augmented["mask"]
+    aug = ChannelShuffle(p=0.5)
+    augmented = aug(image=x, mask=y)
+    x = augmented["image"]
+    y = augmented["mask"]
     
-    Aug = Blur(p = 0.5)
-    Augmented = Aug(image = X,mask = Y)
-    X = Augmented["image"]
-    Y = Augmented["mask"]
+    aug = Blur(p=0.5)
+    augmented = aug(image=x,mask=y)
+    x = augmented["image"]
+    y = augmented["mask"]
     
-    Aug = RGBShift(p = 0.5)
-    Augmented = Aug(image = X,mask = Y)
-    X = Augmented["image"]
-    Y = Augmented["mask"]
+    aug = RGBShift(p=0.5)
+    augmented = aug(image=x,mask=y)
+    x = augmented["image"]
+    y = augmented["mask"]
     
-    Aug = RandomBrightness(p = 0.5)
-    Augmented = Aug(image = X,mask = Y)
-    X = Augmented["image"]
-    Y = Augmented["mask"]
+    aug = RandomBrightness(p=0.5)
+    augmented = aug(image=x,mask=y)
+    x = augmented["image"]
+    y = augmented["mask"]
     
-    return X,Y
-    
-
-
-# In[4]:
-
-
-def Normalize_Scaling(img):
-    img = Image.fromarray(img)
-    stat = ImageStat.Stat(img)
-    img = np.array(img)
-    
-    img = (img - stat.mean)/stat.stddev
-    return img
-
-
-# In[5]:
-
-
-def Normalize_Sum_to_1(img):
-    img = img.astype("float")
-    img /= 255.
-    return img
-
-
-# In[6]:
-
-
-def Zooming_Image(img,X_Shift,Y_shift):    
-    img = img[X_Shift:-X_Shift, Y_shift:-Y_shift, :]
-    return img
-
-
-# In[ ]:
-
-
+    return x, y
 
 
